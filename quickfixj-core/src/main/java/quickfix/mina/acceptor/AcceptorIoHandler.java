@@ -75,11 +75,11 @@ class AcceptorIoHandler extends AbstractIoHandler {
                     }
                     sessionLog.onEvent("Accepting session " + qfSession.getSessionID() + " from "
                             + protocolSession.getRemoteAddress());
-                    final int heartbeatInterval = message.isSetField(HeartBtInt.FIELD) ? message.getInt(HeartBtInt.FIELD) : 0;
+                    final int heartbeatInterval = message.isSetField(HeartBtInt.FIELD) ? message.getInt(HeartBtInt.FIELD) : 0; // 30
                     qfSession.setHeartBeatInterval(heartbeatInterval);
                     sessionLog.onEvent("Acceptor heartbeat set to " + heartbeatInterval
                             + " seconds");
-                    protocolSession.setAttribute(SessionConnector.QF_SESSION, qfSession);
+                    protocolSession.setAttribute(SessionConnector.QF_SESSION, qfSession); // NIOSocketSession (0x00000028: nio socket, server, /127.0.0.1:51260 => /127.0.0.1:9876)
                     final NetworkingOptions networkingOptions = getNetworkingOptions();
                     qfSession.setResponder(new IoSessionResponder(protocolSession,
                             networkingOptions.getSynchronousWrites(), networkingOptions

@@ -26,8 +26,8 @@ import quickfix.field.ApplVerID;
 import static quickfix.MessageUtils.toBeginString;
 
 public class DefaultDataDictionaryProvider implements DataDictionaryProvider {
-    private final SimpleCache<String, DataDictionary> transportDictionaries;
-    private final SimpleCache<ApplVerID, DataDictionary> applicationDictionaries;
+    private final SimpleCache<String, DataDictionary> transportDictionaries; // 指定协议例如：FIX.4.1对应的数据字典
+    private final SimpleCache<ApplVerID, DataDictionary> applicationDictionaries; // 指定ApplVerID(可以理解为某个FIX.*版本)例如：FIX.4.1对应的数据字典
 
     public DefaultDataDictionaryProvider() {
         this(true);

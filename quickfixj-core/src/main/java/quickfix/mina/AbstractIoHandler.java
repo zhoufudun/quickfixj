@@ -41,11 +41,11 @@ import quickfix.SessionID;
 public abstract class AbstractIoHandler extends IoHandlerAdapter {
     protected final Logger log = LoggerFactory.getLogger(getClass());
     private final NetworkingOptions networkingOptions;
-    private final EventHandlingStrategy eventHandlingStrategy;
+    private final EventHandlingStrategy eventHandlingStrategy; // SingleThreadedEventHandlingStrategy
 
     public AbstractIoHandler(NetworkingOptions options, EventHandlingStrategy eventHandlingStrategy) {
         networkingOptions = options;
-        this.eventHandlingStrategy = eventHandlingStrategy;
+        this.eventHandlingStrategy = eventHandlingStrategy; //
     }
 
     @Override

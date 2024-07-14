@@ -64,12 +64,12 @@ public class FileStore implements MessageStore, Closeable {
     private final boolean syncWrites;
     private final int maxCachedMsgs;
     private final String charsetEncoding = CharsetSupport.getCharset();
-    private RandomAccessFile messageFileReader;
-    private RandomAccessFile messageFileWriter;
-    private DataOutputStream headerDataOutputStream;
-    private FileOutputStream headerFileOutputStream;
-    private RandomAccessFile senderSequenceNumberFile;
-    private RandomAccessFile targetSequenceNumberFile;
+    private RandomAccessFile messageFileReader; // D:\study\Desktop\Desktop\study\quickfixj\target\data\executor\FIX.4.1-EXEC-BANZAI.body
+    private RandomAccessFile messageFileWriter; // D:\study\Desktop\Desktop\study\quickfixj\target\data\executor\FIX.4.1-EXEC-BANZAI.body
+    private DataOutputStream headerDataOutputStream; // D:\study\Desktop\Desktop\study\quickfixj\target\data\executor\FIX.4.1-EXEC-BANZAI.header
+    private FileOutputStream headerFileOutputStream; // D:\study\Desktop\Desktop\study\quickfixj\target\data\executor\FIX.4.1-EXEC-BANZAI.header
+    private RandomAccessFile senderSequenceNumberFile; // D:\study\Desktop\Desktop\study\quickfixj\target\data\executor\FIX.4.1-EXEC-BANZAI.senderseqnums
+    private RandomAccessFile targetSequenceNumberFile; // D:\study\Desktop\Desktop\study\quickfixj\target\data\executor\FIX.4.1-EXEC-BANZAI.targetseqnums
 
     FileStore(String path, SessionID sessionID, boolean syncWrites, int maxCachedMsgs)
             throws IOException {
@@ -78,17 +78,17 @@ public class FileStore implements MessageStore, Closeable {
 
         messageIndex = maxCachedMsgs > 0 ? new TreeMap<>() : null;
 
-        final String fullPath = new File(path == null ? "." : path).getAbsolutePath();
-        final String sessionName = FileUtil.sessionIdFileName(sessionID);
-        final String prefix = FileUtil.fileAppendPath(fullPath, sessionName + ".");
+        final String fullPath = new File(path == null ? "." : path).getAbsolutePath(); // D:\study\Desktop\Desktop\study\quickfixj\target\data\executor
+        final String sessionName = FileUtil.sessionIdFileName(sessionID); // FIX.4.1:EXEC->BANZAI
+        final String prefix = FileUtil.fileAppendPath(fullPath, sessionName + "."); // D:\study\Desktop\Desktop\study\quickfixj\target\data\executor\FIX.4.1-EXEC-BANZAI.
 
         msgFileName = prefix + "body";
-        headerFileName = prefix + "header";
+        headerFileName = prefix + "header"; // D:\study\Desktop\Desktop\study\quickfixj\target\data\executor\FIX.4.1-EXEC-BANZAI.header
         senderSeqNumFileName = prefix + "senderseqnums";
         targetSeqNumFileName = prefix + "targetseqnums";
         sessionFileName = prefix + "session";
 
-        final File directory = new File(msgFileName).getParentFile();
+        final File directory = new File(msgFileName).getParentFile(); // D:\study\Desktop\Desktop\study\quickfixj\target\data\executor\FIX.4.1-EXEC-BANZAI.body
         if (!directory.exists()) {
             directory.mkdirs();
         }
@@ -107,7 +107,7 @@ public class FileStore implements MessageStore, Closeable {
         messageFileWriter = new RandomAccessFile(msgFileName, mode); // also creates file
         messageFileReader = new RandomAccessFile(msgFileName, READ_OPTION);
         senderSequenceNumberFile = new RandomAccessFile(senderSeqNumFileName, mode);
-        targetSequenceNumberFile = new RandomAccessFile(targetSeqNumFileName, mode);
+        targetSequenceNumberFile = new RandomAccessFile(targetSeqNumFileName, mode); // D:\study\Desktop\Desktop\study\quickfixj\target\data\executor\FIX.4.1-EXEC-BANZAI.targetseqnums
 
         initializeCache();
     }
@@ -157,7 +157,7 @@ public class FileStore implements MessageStore, Closeable {
         senderSequenceNumberFile.seek(0);
         if (senderSequenceNumberFile.length() > 0) {
             final String s = senderSequenceNumberFile.readUTF();
-            cache.setNextSenderMsgSeqNum(Integer.parseInt(s));
+            cache.setNextSenderMsgSeqNum(Integer.parseInt(s)); // 读取上次发送的序列号，并且设置下次需要发送的序列号
         }
 
         targetSequenceNumberFile.seek(0);

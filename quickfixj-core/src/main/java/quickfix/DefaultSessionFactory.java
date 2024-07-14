@@ -250,7 +250,7 @@ public class DefaultSessionFactory implements SessionFactory {
     private DataDictionary createDataDictionary(SessionID sessionID, SessionSettings settings,
             String settingsKey, String beginString) throws ConfigError, FieldConvertError {
         final String path = getDictionaryPath(sessionID, settings, settingsKey, beginString);
-        final DataDictionary dataDictionary = getDataDictionary(path);
+        final DataDictionary dataDictionary = getDataDictionary(path); // path=FIX41.xml
 
         if (settings.isSetting(sessionID, Session.SETTING_VALIDATE_FIELDS_OUT_OF_ORDER)) {
             dataDictionary.setCheckFieldsOutOfOrder(settings.getBool(sessionID,
@@ -336,7 +336,7 @@ public class DefaultSessionFactory implements SessionFactory {
         if (settings.isSetting(sessionID, settingsKey)) {
             path = settings.getString(sessionID, settingsKey);
         } else {
-            path = toDictionaryPath(beginString);
+            path = toDictionaryPath(beginString); // FIX.4.1
         }
         return path;
     }

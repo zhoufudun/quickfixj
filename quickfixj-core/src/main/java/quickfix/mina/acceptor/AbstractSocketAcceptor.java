@@ -64,7 +64,7 @@ public abstract class AbstractSocketAcceptor extends SessionConnector implements
     private final Map<SocketAddress, AcceptorSessionProvider> sessionProviders = new HashMap<>();
     private final SessionFactory sessionFactory;
     private final Map<SocketAddress, AcceptorSocketDescriptor> socketDescriptorForAddress = new HashMap<>();
-    private final Map<AcceptorSocketDescriptor, IoAcceptor> ioAcceptors = new HashMap<>();
+    private final Map<AcceptorSocketDescriptor, IoAcceptor> ioAcceptors = new HashMap<>(); // 一个服务端为胡维护一个IoAcceptor（NioSocketAcceptor()）
 
     protected AbstractSocketAcceptor(SessionSettings settings, SessionFactory sessionFactory)
             throws ConfigError {
@@ -97,7 +97,7 @@ public abstract class AbstractSocketAcceptor extends SessionConnector implements
             startSessionTimer();
 
             for (AcceptorSocketDescriptor socketDescriptor : socketDescriptorForAddress.values()) {
-                address = socketDescriptor.getAddress();
+                address = socketDescriptor.getAddress(); // 服务端地址：0.0.0.0/0.0.0.0:9876
                 IoAcceptor ioAcceptor = getIoAcceptor(socketDescriptor);
                 CompositeIoFilterChainBuilder ioFilterChainBuilder = new CompositeIoFilterChainBuilder(getIoFilterChainBuilder());
 
@@ -137,7 +137,7 @@ public abstract class AbstractSocketAcceptor extends SessionConnector implements
     }
 
     private IoAcceptor getIoAcceptor(AcceptorSocketDescriptor socketDescriptor, boolean init) throws ConfigError {
-        int transportType = ProtocolFactory.getAddressTransportType(socketDescriptor.getAddress());
+        int transportType = ProtocolFactory.getAddressTransportType(socketDescriptor.getAddress()); // 0
         AcceptorSessionProvider sessionProvider = sessionProviders.
                 computeIfAbsent(socketDescriptor.getAddress(),
                         k -> new DefaultAcceptorSessionProvider(socketDescriptor.getAcceptedSessions()));
@@ -255,7 +255,7 @@ public abstract class AbstractSocketAcceptor extends SessionConnector implements
     }
 
     private static class AcceptorSocketDescriptor {
-        private final SocketAddress address;
+        private final SocketAddress address; // 服务端的绑定的地址：0.0.0.0/0.0.0.0:9877
         private final boolean useSSL;
         private final SSLConfig sslConfig;
         private final Map<SessionID, Session> acceptedSessions = new HashMap<>();
@@ -326,7 +326,7 @@ public abstract class AbstractSocketAcceptor extends SessionConnector implements
 
     private class DefaultAcceptorSessionProvider implements AcceptorSessionProvider {
 
-        private final Map<SessionID, Session> acceptorSessions;
+        private final Map<SessionID, Session> acceptorSessions; // 一个服务端维护的客户端session信息
 
         public DefaultAcceptorSessionProvider(Map<SessionID, Session> acceptorSessions) {
             this.acceptorSessions = acceptorSessions;

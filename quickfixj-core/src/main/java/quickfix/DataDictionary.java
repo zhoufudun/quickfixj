@@ -837,7 +837,7 @@ public class DataDictionary {
 
         return elementNodesCount;
     }
-
+    // 按规则解析：FIX*.xml文件
     private void read(String location) throws ConfigError {
         final InputStream inputStream = FileUtil.open(getClass(), location, URL, FILESYSTEM,
                 CONTEXT_RESOURCE, CLASSLOADER_RESOURCE);
@@ -846,7 +846,7 @@ public class DataDictionary {
         }
 
         try {
-            load(inputStream);
+            load(inputStream); // 按规则解析：FIX*.xml文件
         } catch (final Exception e) {
             throw new ConfigError(location + ": " + e.getMessage(), e);
         } finally {

@@ -420,7 +420,7 @@ public class Session implements Closeable {
     private boolean validateSequenceNumbers = true;
     private boolean validateIncomingMessage = true;
     private final int[] logonIntervals;
-    private final Set<InetAddress> allowedRemoteAddresses;
+    private final Set<InetAddress> allowedRemoteAddresses; // 允许远程接入服务器的的远端地址
     
     public static final int DEFAULT_MAX_LATENCY = 120;
     public static final int DEFAULT_RESEND_RANGE_CHUNK_SIZE = 0; // no resend range
@@ -681,7 +681,7 @@ public class Session implements Closeable {
         return session.send(message);
     }
 
-    static void registerSession(Session session) {
+    static void registerSession(Session session) { // FIX.4.1:EXEC->BANZAI[in:1,out:1]
         sessions.put(session.getSessionID(), session);
     }
 

@@ -99,7 +99,7 @@ public final class SessionState {
 
     private void setHeartBeatMillis(long heartBeatMillis) {
         synchronized (lock) {
-            this.heartBeatMillis = heartBeatMillis;
+            this.heartBeatMillis = heartBeatMillis; // 30000
         }
     }
 

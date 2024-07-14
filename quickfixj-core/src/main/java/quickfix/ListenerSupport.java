@@ -27,7 +27,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 public class ListenerSupport {
     private final List<Object> listeners = new CopyOnWriteArrayList<>();
-    private final Object multicaster;
+    private final Object multicaster; // 代理对象，拦截所有接口
 
     public ListenerSupport(Class<?> listenerClass) {
         multicaster = Proxy.newProxyInstance(this.getClass().getClassLoader(),
