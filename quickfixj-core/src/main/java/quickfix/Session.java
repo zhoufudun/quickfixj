@@ -379,13 +379,13 @@ public class Session implements Closeable {
     // The session time checks were causing performance problems
     // so we are checking only once per second.
     private long lastSessionTimeCheck = 0;
-    private int logonAttempts = 0;
+    private int logonAttempts = 0; // 客户端重新登陆服务端的间隔所在的数组索引
     private long lastSessionLogon = 0;
 
     private final DataDictionaryProvider dataDictionaryProvider;
     private final boolean checkLatency;
     private final int maxLatency;
-    private int resendRequestChunkSize = 0;
+    private int resendRequestChunkSize = 0; // 服务端发现消息漏了之后，服务端希望客户端一次性重发几个消息
     private final boolean resetOnLogon;
     private final boolean resetOnLogout;
     private final boolean resetOnDisconnect;
@@ -419,7 +419,7 @@ public class Session implements Closeable {
     private final DefaultApplVerID senderDefaultApplVerID;
     private boolean validateSequenceNumbers = true;
     private boolean validateIncomingMessage = true;
-    private final int[] logonIntervals;
+    private final int[] logonIntervals; // 客户端重新登陆服务端的间隔
     private final Set<InetAddress> allowedRemoteAddresses; // 允许远程接入服务器的的远端地址
     
     public static final int DEFAULT_MAX_LATENCY = 120;
@@ -1044,7 +1044,7 @@ public class Session implements Closeable {
                     nextReject(message);
                     break;
                 default:
-                    if (!verify(message)) {
+                    if (!verify(message)) { // 业务消息例子：8=FIX.4.29=15735=D34=1543=Y49=BANZAI52=20240718-03:11:16.09656=EXEC122=20240718-02:44:43.00011=172127068301021=138=140=154=155=159=060=20240718-02:44:43.00010=052
                         return;
                     }
                     state.incrNextTargetMsgSeqNum();
@@ -1297,12 +1297,12 @@ public class Session implements Closeable {
             endSeqNo = expectedSenderNum - 1;
         }
 
-        // Just do a gap fill when messages aren't persisted
+        // Just do a gap fill when messages aren't persisted 当消息不持久时，只需填补空白
         if (!persistMessages) {
             endSeqNo += 1;
             final int next = state.getNextSenderMsgSeqNum();
-            if (endSeqNo > next) {
-                endSeqNo = next;
+            if (endSeqNo > next) { // 如果服务端期望重发的数据范围的最大值大于本地下一个目标发送序列号，以本地为主，并且将本地的值发给服务端，让服务端的NextTargetMsgSeqNum设置为客户端的getNextSenderMsgSeqNum()的值
+                endSeqNo = next; // 客户端的发送序列号设置为服务端期望收到的最小序列号
             }
             generateSequenceReset(messageOutSync, beginSeqNo, endSeqNo);
         } else {
@@ -1369,7 +1369,7 @@ public class Session implements Closeable {
 
         return true;
     }
-
+    // 8=FIX.4.29=12635=D34=1549=BANZAI52=20240718-02:44:43.00056=EXEC11=172127068301021=138=140=154=155=159=060=20240718-02:44:43.00010=045
     private void initializeResendFields(Message message) throws FieldNotFound {
         final Message.Header header = message.getHeader();
         final LocalDateTime sendingTime = header.getUtcTimeStamp(SendingTime.FIELD);
@@ -1479,9 +1479,9 @@ public class Session implements Closeable {
             if (newSequence > getExpectedTargetNum()) {
                 state.setNextTargetMsgSeqNum(newSequence);
                 final ResendRange range = state.getResendRange();
-                if (range.isChunkedResendRequest()) {
+                if (range.isChunkedResendRequest()) { // 客户端分多次发送给服务端
                     if (newSequence >= range.getCurrentEndSeqNo()
-                            && newSequence < range.getEndSeqNo()) {
+                            && newSequence < range.getEndSeqNo()) { // 客户端只重发了部分消息，剩余的还需要再次重发，需要服务端告诉客户端
                         // If new seq no is beyond the range of the current chunk
                         // and if we are not done with all resend chunks,
                         // we send out a ResendRequest at once.
@@ -1492,12 +1492,12 @@ public class Session implements Closeable {
                         // New sequence is the sequence number of the next message that
                         // should be received, so it must be included in requested range
                         sendResendRequest(beginString, range.getEndSeqNo() + 1, newSequence,
-                                range.getEndSeqNo());
+                                range.getEndSeqNo()); // 客户端重发的消息不够，在次请求重发剩余的消息
                     }
                 }
                 // QFJ-728: newSequence will be the seqnum of the next message so we
                 // delete all older messages from the queue since they are effectively skipped.
-                state.dequeueMessagesUpTo(newSequence);
+                state.dequeueMessagesUpTo(newSequence); // newSequence将是下一条消息的序列，因此我们从队列中删除所有旧消息，因为它们实际上被跳过了。
             } else if (newSequence < getExpectedTargetNum()) {
 
                 getLog().onErrorEvent(
@@ -1718,13 +1718,13 @@ public class Session implements Closeable {
         state.incrNextTargetMsgSeqNum();
         nextQueued();
     }
-
+    // 验证消息正确性： msg=8=FIX.4.29=9935=434=31943=Y49=BANZAI52=20240716-09:34:30.77556=EXEC122=20240716-09:34:30.77536=327123=Y10=174
     private boolean verify(Message msg, boolean checkTooHigh, boolean checkTooLow)
             throws RejectLogon, FieldNotFound, IncorrectDataFormat, IncorrectTagValue,
             UnsupportedMessageType, IOException {
 
         state.setLastReceivedTime(SystemTime.currentTimeMillis());
-        state.clearTestRequestCounter();
+        state.clearTestRequestCounter(); // 此时收到了消息，可以将测试消息次数清空了
 
         String msgType;
         try {
@@ -1768,15 +1768,15 @@ public class Session implements Closeable {
                 final ResendRange range;
                 synchronized (state.getLock()) {
                     range = state.getResendRange();
-                    if (msgSeqNum >= range.getEndSeqNo()) {
+                    if (msgSeqNum >= range.getEndSeqNo()) { // 收到的包的序列号>之前服务端向客户端发送的重发包的最大序列号，说明之前需要客户端重发的数据都发给服务端了
                         getLog().onEvent(
                                 "ResendRequest for messages FROM " + range.getBeginSeqNo() + " TO " + range.getEndSeqNo()
                                         + " has been satisfied.");
-                        state.setResendRange(0, 0, 0);
+                        state.setResendRange(0, 0, 0); // 重置，方便下次使用
                     }
                 }
                 if (msgSeqNum < range.getEndSeqNo() && range.isChunkedResendRequest() && msgSeqNum >= range.getCurrentEndSeqNo()) {
-                    final String beginString = header.getString(BeginString.FIELD);
+                    final String beginString = header.getString(BeginString.FIELD); // 客户端只发送了服务端期望重发的部分数据，服务端收到后，会向客户端发起剩余的重发数据请求
                     sendResendRequest(beginString, range.getEndSeqNo() + 1, msgSeqNum + 1, range.getEndSeqNo());
                 }
             }
@@ -1916,13 +1916,13 @@ public class Session implements Closeable {
                     // QFJ-926 - reset session before initiating Logon
                     resetIfSessionNotCurrent(sessionID, SystemTime.currentTimeMillis());
                     if (generateLogon()) {
-                        getLog().onEvent("Initiated logon request");
+                        getLog().onEvent("Initiated logon request"); // 客户端重新登陆服务端，打印日志
                     } else {
                         getLog().onErrorEvent("Error during logon request initiation");
                     }
                 }
             } else if (state.isLogonAlreadySent() && state.isLogonTimedOut()) {
-                disconnect("Timed out waiting for logon response", true);
+                disconnect("Timed out waiting for logon response", true); // 客户端端登陆服务端，在指定时间内没有回到应答，客户端断开链接
             }
             return;
         }
@@ -1931,19 +1931,19 @@ public class Session implements Closeable {
             return;
         }
 
-        if (state.isLogoutTimedOut()) {
+        if (state.isLogoutTimedOut()) { // 登出超时
             disconnect("Timed out waiting for logout response", true);
         }
 
-        if (state.isTimedOut()) {
-            if (!disableHeartBeatCheck) {
+        if (state.isTimedOut()) { // 很久没收到消息了
+            if (!disableHeartBeatCheck) { // 开启心跳检查
                 disconnect("Timed out waiting for heartbeat", true);
                 stateListener.onHeartBeatTimeout();
             } else {
                 LOG.warn("Heartbeat failure detected but deactivated");
             }
-        } else {
-            if (state.isTestRequestNeeded()) {
+        } else {  // 最近收到消息了
+            if (state.isTestRequestNeeded()) { // 配置了发送测试数据
                 generateTestRequest("TEST");
                 getLog().onEvent("Sent test request TEST");
                 stateListener.onMissedHeartBeat();
@@ -2049,7 +2049,7 @@ public class Session implements Closeable {
                     getLog().onEvent(msg);
                 }
                 responder.disconnect();
-                setResponder(null);
+                setResponder(null); // 清理该客户端对应的应答器
             }
 
             if (logonReceived || logonSent) {
@@ -2296,7 +2296,7 @@ public class Session implements Closeable {
             }
 
             final String msgType = msg.getHeader().getString(MsgType.FIELD);
-
+            // admin类消息，不重新发送给服务端，客户端会有定时心跳任务
             if (MessageUtils.isAdminMessage(msgType) && !forceResendWhenCorruptedStore) {
                 if (begin == 0) {
                     begin = msgSeqNum;
@@ -2304,8 +2304,8 @@ public class Session implements Closeable {
             } else {
                 initializeResendFields(msg);
                 if (resendApproved(msg)) {
-                    if (begin != 0) {
-                        generateSequenceReset(receivedMessage, begin, msgSeqNum);
+                    if (begin != 0) { // 这种情况发生场景就是：比如之前重发了15的序列号，下次应该从发16，实际上16是admin消息，无需重发，此时重发17数据，这个时候服务端期望收到16，所以需要先发一条序列号重置消息，告知服务端更新下次收到的期望序列号为17，之后在发送真正的17序列号的数据
+                        generateSequenceReset(receivedMessage, begin, msgSeqNum); // 服务端收到后会更新服务端的targetseqnums
                     }
                     getLog().onEvent("Resending message: " + msgSeqNum);
                     send(msg.toString());
@@ -2463,7 +2463,7 @@ public class Session implements Closeable {
             if (header.isSetField(OrigSendingTime.FIELD)) {
                 final LocalDateTime origSendingTime = header.getUtcTimeStamp(OrigSendingTime.FIELD);
                 final LocalDateTime sendingTime = header.getUtcTimeStamp(SendingTime.FIELD);
-                if (origSendingTime.compareTo(sendingTime) > 0) {
+                if (origSendingTime.compareTo(sendingTime) > 0) { // 重发的消息的原始发送时间>当前这条消息发送时间，报错
                     generateReject(msg, BAD_TIME_REJ_REASON, OrigSendingTime.FIELD);
                     generateLogout(BAD_ORIG_TIME_TEXT);
                     return false;
@@ -2594,9 +2594,9 @@ public class Session implements Closeable {
             if (num == 0) {
                 final int msgSeqNum = header.getInt(MsgSeqNum.FIELD);
                 if (persistMessages) {
-                    state.set(msgSeqNum, messageString);
+                    state.set(msgSeqNum, messageString); // 服务端持久化消息
                 }
-                state.incrNextSenderMsgSeqNum();
+                state.incrNextSenderMsgSeqNum(); // 该客户端的序列号持久化
             }
 
             return result;

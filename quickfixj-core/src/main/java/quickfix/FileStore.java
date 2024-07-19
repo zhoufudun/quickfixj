@@ -382,7 +382,7 @@ public class FileStore implements MessageStore, Closeable {
         senderSequenceNumberFile.seek(0);
         senderSequenceNumberFile.writeUTF("" + cache.getNextSenderMsgSeqNum());
     }
-
+    // 新的序列号持久化
     private void storeTargetSequenceNumber() throws IOException {
         targetSequenceNumberFile.seek(0);
         targetSequenceNumberFile.writeUTF("" + cache.getNextTargetMsgSeqNum());

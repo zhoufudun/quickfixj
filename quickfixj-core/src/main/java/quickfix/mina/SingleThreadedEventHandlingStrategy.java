@@ -93,14 +93,14 @@ public class SingleThreadedEventHandlingStrategy implements EventHandlingStrateg
                         final List<SessionMessageEvent> tempList = new ArrayList<>(eventQueue.size());
                         queueTracker.drainTo(tempList);
                         for (SessionMessageEvent event : tempList) {
-                            event.processMessage();
+                            event.processMessage(); // 服务端停止的时候，会将队列中客户端的任务先执行完毕
                         }
                     }
                     if (stopTime == 0) {
                         stopTime = SystemTime.currentTimeMillis();
                     }
                     if (!sessionConnector.isLoggedOn() || SystemTime.currentTimeMillis() - stopTime > 5000L) {
-                        sessionConnector.stopSessionTimer();
+                        sessionConnector.stopSessionTimer(); // 停止定时扫描任务
                         // reset the stoptime
                         stopTime = 0;
                     }
@@ -110,7 +110,7 @@ public class SingleThreadedEventHandlingStrategy implements EventHandlingStrateg
             try {
                 SessionMessageEvent event = getMessage();
                 if (event != null) {
-                    event.processMessage();
+                    event.processMessage(); //  应该使用异步线程处理，防止耗时操作
                 }
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
@@ -127,7 +127,7 @@ public class SingleThreadedEventHandlingStrategy implements EventHandlingStrateg
      * If thread is still alive, an attempt is made to stop it.
      * An IllegalStateException is thrown if stopping the old thread
      * was not successful.
-     *
+     * <p>
      * This method must not be called by several threads concurrently.
      */
     public void blockInThread() {
@@ -142,11 +142,11 @@ public class SingleThreadedEventHandlingStrategy implements EventHandlingStrateg
         startHandlingMessages();
         messageProcessingThread = new ThreadAdapter(() -> {
             sessionConnector.log.info("Started {}", MESSAGE_PROCESSOR_THREAD_NAME);
-            block();
+            block(); // 阻塞处理任务，直到进程退出
             sessionConnector.log.info("Stopped {}", MESSAGE_PROCESSOR_THREAD_NAME);
         }, MESSAGE_PROCESSOR_THREAD_NAME, executor);
         messageProcessingThread.setDaemon(true);
-        messageProcessingThread.start();
+        messageProcessingThread.start(); // 任务提交到线程池
     }
 
     private static class SessionMessageEvent {
@@ -174,7 +174,7 @@ public class SingleThreadedEventHandlingStrategy implements EventHandlingStrateg
     /**
      * Stops processing of messages without waiting for message processing
      * thread to finish.
-     * 
+     * <p>
      * It is advised to call stopHandlingMessages(true) instead of this method.
      */
     public synchronized void stopHandlingMessages() {
@@ -212,95 +212,95 @@ public class SingleThreadedEventHandlingStrategy implements EventHandlingStrateg
         return getQueueSize();
     }
 
-	/**
-	 * A stand-in for the Thread class that delegates to an Executor.
-	 * Implements all the API required by pre-existing QFJ code.
-	 */
-	static final class ThreadAdapter {
+    /**
+     * A stand-in for the Thread class that delegates to an Executor.
+     * Implements all the API required by pre-existing QFJ code.
+     */
+    static final class ThreadAdapter {
 
-		private final Executor executor;
-		private final RunnableWrapper wrapper;
+        private final Executor executor;
+        private final RunnableWrapper wrapper;
 
-		ThreadAdapter(Runnable command, String name, Executor executor) {
-                    wrapper = new RunnableWrapper(command, name);
-                    this.executor = executor != null ? executor : new DedicatedThreadExecutor(name);
-		}
+        ThreadAdapter(Runnable command, String name, Executor executor) {
+            wrapper = new RunnableWrapper(command, name);
+            this.executor = executor != null ? executor : new DedicatedThreadExecutor(name);
+        }
 
-		public void join() throws InterruptedException {
-                    wrapper.join();
-		}
+        public void join() throws InterruptedException {
+            wrapper.join();
+        }
 
-		public void setDaemon(boolean b) {
-                    /* No-Op. Already set for DedicatedThreadExecutor. Not relevant for externally supplied Executors. */
-		}
+        public void setDaemon(boolean b) {
+            /* No-Op. Already set for DedicatedThreadExecutor. Not relevant for externally supplied Executors. */
+        }
 
-		public boolean isAlive() {
-                    return wrapper.isAlive();
-		}
+        public boolean isAlive() {
+            return wrapper.isAlive();
+        }
 
-		public void start() {
-                    executor.execute(wrapper);
-		}
-                
-		/**
-		 * Provides the Thread::join and Thread::isAlive semantics on the nested Runnable.
-		 */
-		static final class RunnableWrapper implements Runnable {
+        public void start() {
+            executor.execute(wrapper);
+        }
 
-			private final CountDownLatch latch = new CountDownLatch(1);
-			private final Runnable command;
-			private final String name;
+        /**
+         * Provides the Thread::join and Thread::isAlive semantics on the nested Runnable.
+         */
+        static final class RunnableWrapper implements Runnable {
 
-			public RunnableWrapper(Runnable command, String name) {
-                            this.command = command;
-                            this.name = name;
-			}
+            private final CountDownLatch latch = new CountDownLatch(1);
+            private final Runnable command;
+            private final String name;
 
-                        @Override
-                        public void run() {
-                            Thread currentThread = Thread.currentThread();
-                            String threadName = currentThread.getName();
-                            try {
-                                if (!name.equals(threadName)) {
-                                    currentThread.setName(name + " (" + threadName + ")");
-                                }
-                                command.run();
-                            } finally {
-                                latch.countDown();
-                                currentThread.setName(threadName);
-                            }
-                        }
+            public RunnableWrapper(Runnable command, String name) {
+                this.command = command;
+                this.name = name;
+            }
 
-			public void join() throws InterruptedException {
-                            latch.await();
-			}
+            @Override
+            public void run() {
+                Thread currentThread = Thread.currentThread();
+                String threadName = currentThread.getName();
+                try {
+                    if (!name.equals(threadName)) {
+                        currentThread.setName(name + " (" + threadName + ")");
+                    }
+                    command.run();
+                } finally {
+                    latch.countDown();
+                    currentThread.setName(threadName);
+                }
+            }
 
-			public boolean isAlive() {
-                            return latch.getCount() > 0;
-			}
-		}
+            public void join() throws InterruptedException {
+                latch.await();
+            }
 
-		/**
-		 * An Executor that uses its own dedicated Thread.
-		 * Provides equivalent behavior to the prior non-Executor approach.
-		 */
-		static final class DedicatedThreadExecutor implements Executor {
+            public boolean isAlive() {
+                return latch.getCount() > 0;
+            }
+        }
 
-			private final String name;
-                        private Thread thread;
-			
-			DedicatedThreadExecutor(String name) {
-				this.name = name;
-			}
+        /**
+         * An Executor that uses its own dedicated Thread.
+         * Provides equivalent behavior to the prior non-Executor approach.
+         */
+        static final class DedicatedThreadExecutor implements Executor {
 
-			@Override
-			public void execute(Runnable command) {
-				thread = new Thread(command, name);
-				thread.setDaemon(true);
-				thread.start();
-			}
-		}
+            private final String name;
+            private Thread thread;
 
-	}
+            DedicatedThreadExecutor(String name) {
+                this.name = name;
+            }
+
+            @Override
+            public void execute(Runnable command) {
+                thread = new Thread(command, name);
+                thread.setDaemon(true);
+                thread.start();
+            }
+        }
+
+    }
 
 }

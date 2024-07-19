@@ -22,18 +22,8 @@ package quickfix.examples.executor;
 import org.quickfixj.jmx.JmxExporter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import quickfix.ConfigError;
-import quickfix.DefaultMessageFactory;
-import quickfix.FieldConvertError;
-import quickfix.FileStoreFactory;
-import quickfix.LogFactory;
-import quickfix.MessageFactory;
-import quickfix.MessageStoreFactory;
-import quickfix.RuntimeError;
-import quickfix.ScreenLogFactory;
-import quickfix.SessionID;
-import quickfix.SessionSettings;
-import quickfix.SocketAcceptor;
+import quickfix.*;
+import quickfix.mina.acceptor.AbstractSocketAcceptor;
 import quickfix.mina.acceptor.DynamicAcceptorSessionProvider;
 import quickfix.mina.acceptor.DynamicAcceptorSessionProvider.TemplateMapping;
 
@@ -55,7 +45,7 @@ import static quickfix.Acceptor.SETTING_SOCKET_ACCEPT_PORT;
 
 public class Executor {
     private final static Logger log = LoggerFactory.getLogger(Executor.class);
-    private final SocketAcceptor acceptor;
+    private final ThreadedSocketAcceptor acceptor;
     private final Map<InetSocketAddress, List<TemplateMapping>> dynamicSessionMappings = new HashMap<>();
 
     private final JmxExporter jmxExporter;
@@ -67,8 +57,9 @@ public class Executor {
         LogFactory logFactory = new ScreenLogFactory(true, true, true);
         MessageFactory messageFactory = new DefaultMessageFactory();
 
-        acceptor = new SocketAcceptor(application, messageStoreFactory, settings, logFactory,
-                messageFactory);
+        acceptor = new ThreadedSocketAcceptor(application, messageStoreFactory, settings, logFactory,
+                messageFactory,100);
+
 
         configureDynamicSessions(settings, application, messageStoreFactory, logFactory,
                 messageFactory);

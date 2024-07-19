@@ -44,20 +44,20 @@ public final class SessionState {
 
     private final boolean initiator;
 
-    private long logonTimeoutMs = 10000L;
-    private long logoutTimeoutMs = 2000L;
+    private long logonTimeoutMs = 10000L; // 登陆超时时间
+    private long logoutTimeoutMs = 2000L; // 登出超时时间
 
     private boolean logonSent;
     private boolean logonReceived;
     private boolean logoutSent;
     private boolean logoutReceived = false;
-    private int testRequestCounter;
-    private long lastSentTime;
-    private long lastReceivedTime;
-    private final double testRequestDelayMultiplier;
+    private int testRequestCounter; // 客户端发送测试数据到服务端的次数
+    private long lastSentTime; // 发送消息就会更新
+    private long lastReceivedTime; // 收到消息就会更新
+    private final double testRequestDelayMultiplier; // 测试请求延迟乘数？？
     private long heartBeatMillis = Long.MAX_VALUE;
     private int heartBeatInterval;
-
+    // 服务端向客户端发送的重发消息的范围:beginSeqNo=15,endSeqNo=28,currentEndSeqNo=0
     private final ResendRange resendRange = new ResendRange();
     private boolean resetSent;
     private boolean resetReceived;
@@ -111,7 +111,7 @@ public final class SessionState {
 
     public boolean isHeartBeatNeeded() {
         long millisSinceLastSentTime = SystemTime.currentTimeMillis() - getLastSentTime();
-        // QFJ-448: allow 10 ms leeway since exact comparison causes skipped heartbeats occasionally
+        // QFJ-448: allow 10 ms leeway since exact comparison causes skipped heartbeats occasionally 留出10ms的余地，因为精确比较偶尔会导致心跳跳过
         return millisSinceLastSentTime + 10 > getHeartBeatMillis() && getTestRequestCounter() == 0;
     }
 
@@ -281,8 +281,7 @@ public final class SessionState {
 
     public boolean isTestRequestNeeded() {
         long millisSinceLastReceivedTime = timeSinceLastReceivedMessage();
-        return millisSinceLastReceivedTime >= ((1 + testRequestDelayMultiplier) * (getTestRequestCounter() + 1))
-                * getHeartBeatMillis();
+        return millisSinceLastReceivedTime >= ((1 + testRequestDelayMultiplier) * (getTestRequestCounter() + 1)) * getHeartBeatMillis();
     }
 
     private long timeSinceLastReceivedMessage() {
@@ -291,7 +290,7 @@ public final class SessionState {
 
     public boolean isTimedOut() {
         long millisSinceLastReceivedTime = timeSinceLastReceivedMessage();
-        return millisSinceLastReceivedTime >= 2.4 * getHeartBeatMillis();
+        return millisSinceLastReceivedTime >= 2.4 * getHeartBeatMillis(); // 当前时间-上次收到消息时间> 2.4 *  心跳间隔
     }
 
     public boolean set(int sequence, String message) throws IOException {
@@ -399,7 +398,7 @@ public final class SessionState {
             resendRange.setCurrentEndSeqNo(currentResend);
         }
     }
-
+    // 判断服务端是否向客户端发送了重发数据请求
     public boolean isResendRequested() {
         synchronized (lock) {
             return !(resendRange.getBeginSeqNo() == 0 && resendRange.getEndSeqNo() == 0);
@@ -537,7 +536,7 @@ public final class SessionState {
 
         int beginSeqNo = 0;
         int endSeqNo = 0;
-        int currentEndSeqNo = 0;
+        int currentEndSeqNo = 0; // 当前服务端收到的重发片段中，最大SeqNo
 
         public int getBeginSeqNo() {
             return beginSeqNo;

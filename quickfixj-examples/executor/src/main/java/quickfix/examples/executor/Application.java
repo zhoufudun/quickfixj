@@ -68,8 +68,8 @@ public class Application extends quickfix.MessageCracker implements quickfix.App
 
     private final Logger log = LoggerFactory.getLogger(getClass());
     private final boolean alwaysFillLimitOrders;
-    private final HashSet<String> validOrderTypes = new HashSet<>();
-    private MarketDataProvider marketDataProvider;
+    private final HashSet<String> validOrderTypes = new HashSet<>(); // 服务端支持的订单类型
+    private MarketDataProvider marketDataProvider; // 从哪查询市场价格
 
     public Application(SessionSettings settings) throws ConfigError, FieldConvertError {
         initializeValidOrderTypes(settings);
@@ -84,7 +84,7 @@ public class Application extends quickfix.MessageCracker implements quickfix.App
                 final double defaultMarketPrice = settings.getDouble(DEFAULT_MARKET_PRICE_KEY);
                 marketDataProvider = new MarketDataProvider() {
                     public double getAsk(String symbol) {
-                        return defaultMarketPrice;
+                        return defaultMarketPrice; // 默认市场价格12.3元， 这里可以调用行情等获取最新价格
                     }
 
                     public double getBid(String symbol) {
@@ -260,13 +260,13 @@ public class Application extends quickfix.MessageCracker implements quickfix.App
             LogUtil.logThrowable(sessionID, e.getMessage(), e);
         }
     }
-
+    // 服务端收到消息后，经过验证，校验，最终在fromCallback方法中会回调（反射）这个方法，处理具体业务
     public void onMessage(quickfix.fix42.NewOrderSingle order, SessionID sessionID) throws FieldNotFound,
             UnsupportedMessageType, IncorrectTagValue {
         try {
-        validateOrder(order);
+        validateOrder(order); // order=8=FIX.4.29=15735=D34=1043=Y49=BANZAI52=20240718-03:53:22.58656=EXEC122=20240718-03:52:28.76911=172127474877721=138=140=154=155=159=060=20240718-03:52:28.76810=129
 
-        OrderQty orderQty = order.getOrderQty();
+        OrderQty orderQty = order.getOrderQty(); // 38=1.0
         Price price = getPrice(order);
 
         quickfix.fix42.ExecutionReport accept = new quickfix.fix42.ExecutionReport(genOrderID(), genExecID(),
@@ -274,7 +274,7 @@ public class Application extends quickfix.MessageCracker implements quickfix.App
                         .getSymbol(), order.getSide(), new LeavesQty(0), new CumQty(0), new AvgPx(0));
 
         accept.set(order.getClOrdID());
-        sendMessage(sessionID, accept);
+        sendMessage(sessionID, accept); // 向客户端发送执行报告
 
         if (isOrderExecutable(order, price)) {
             quickfix.fix42.ExecutionReport executionReport = new quickfix.fix42.ExecutionReport(genOrderID(),
