@@ -1887,7 +1887,7 @@ public class Session implements Closeable {
             final long now = SystemTime.currentTimeMillis();
             if ((now - lastSessionTimeCheck) >= 1000L) {
                 lastSessionTimeCheck = now;
-                if (!isSessionTime()) {
+                if (!isSessionTime()) { //
                     if (state.isResetNeeded()) {
                         reset(); // only reset if seq nums are != 1
                     }
@@ -1899,8 +1899,8 @@ public class Session implements Closeable {
             }
         }
 
-        // Return if we are not connected
-        if (!hasResponder()) {
+        // Return if we are not connected， 如果之前已经断开链接这里才会往下走，假设之前正常运行（hasResponder()=true），到关闭时间点了，这里会直接返回
+        if (!hasResponder()) { // 客户端和服务端都有一个应答器
             return;
         }
 

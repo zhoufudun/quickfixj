@@ -146,7 +146,7 @@ public class DefaultSessionFactory implements SessionFactory {
             }
 
             int heartbeatInterval = 0;
-            if (connectionType.equals(SessionFactory.INITIATOR_CONNECTION_TYPE)) {
+            if (connectionType.equals(SessionFactory.INITIATOR_CONNECTION_TYPE)) { // 客户端的心跳才起作用
                 heartbeatInterval = (int) settings.getLong(sessionID, Session.SETTING_HEARTBTINT);
                 if (heartbeatInterval <= 0) {
                     throw new ConfigError("Heartbeat must be greater than zero");

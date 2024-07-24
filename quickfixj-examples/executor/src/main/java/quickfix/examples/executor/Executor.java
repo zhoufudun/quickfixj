@@ -57,8 +57,20 @@ public class Executor {
         LogFactory logFactory = new ScreenLogFactory(true, true, true);
         MessageFactory messageFactory = new DefaultMessageFactory();
 
-        acceptor = new ThreadedSocketAcceptor(application, messageStoreFactory, settings, logFactory,
-                messageFactory,100);
+//        acceptor = new ThreadedSocketAcceptor(application, messageStoreFactory, settings, logFactory,
+//                messageFactory,100);
+
+        // 高低水位测试
+        ThreadedSocketAcceptor.Builder builder = ThreadedSocketAcceptor.newBuilder();
+        builder.withApplication(application);
+        builder.withMessageStoreFactory(messageStoreFactory);
+        builder.withSettings(settings);
+        builder.withLogFactory(logFactory);
+        builder.withMessageFactory(messageFactory);
+//        builder.withQueueCapacity(6); // 队列大小和高低水位不能同时使用
+        builder.withQueueWatermarks(1,2);
+
+        acceptor = builder.build();
 
 
         configureDynamicSessions(settings, application, messageStoreFactory, logFactory,

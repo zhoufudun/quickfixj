@@ -110,7 +110,7 @@ public class SingleThreadedEventHandlingStrategy implements EventHandlingStrateg
             try {
                 SessionMessageEvent event = getMessage();
                 if (event != null) {
-                    event.processMessage(); //  应该使用异步线程处理，防止耗时操作
+                    event.processMessage();
                 }
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();

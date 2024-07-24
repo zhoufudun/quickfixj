@@ -55,7 +55,7 @@ public final class SessionState {
     private long lastSentTime; // 发送消息就会更新
     private long lastReceivedTime; // 收到消息就会更新
     private final double testRequestDelayMultiplier; // 测试请求延迟乘数？？
-    private long heartBeatMillis = Long.MAX_VALUE;
+    private long heartBeatMillis = Long.MAX_VALUE; // 以客户端的心跳间隔为准
     private int heartBeatInterval;
     // 服务端向客户端发送的重发消息的范围:beginSeqNo=15,endSeqNo=28,currentEndSeqNo=0
     private final ResendRange resendRange = new ResendRange();
