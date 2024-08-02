@@ -56,7 +56,7 @@ import org.slf4j.LoggerFactory;
 public class IoSessionInitiator {
     private final static long CONNECT_POLL_TIMEOUT = 2000L;
     private final ScheduledExecutorService executor;
-    private final ConnectTask reconnectTask;
+    private final ConnectTask reconnectTask; // 用于配置TCP层面，定时重连服务
     private final Logger log = LoggerFactory.getLogger(getClass());
 
     private Future<?> reconnectFuture;
@@ -358,7 +358,7 @@ public class IoSessionInitiator {
         if (reconnectFuture == null) {
             // The following logon reenabled the session. The actual logon will take
             // place as a side-effect of the session timer task (not the reconnect task).
-            reconnectTask.getFixSession().logon(); // only enables the session
+            reconnectTask.getFixSession().logon(); // only enables the session  这里设置为true后，通过SessionTimerTask才能发送登陆消息
             reconnectFuture = executor
                     .scheduleWithFixedDelay(reconnectTask, 0, 1, TimeUnit.SECONDS);
         }
