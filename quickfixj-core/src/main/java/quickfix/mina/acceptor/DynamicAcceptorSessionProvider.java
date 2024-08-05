@@ -131,7 +131,7 @@ public class DynamicAcceptorSessionProvider implements AcceptorSessionProvider {
         Session s = Session.lookupSession(sessionID);
         if (s == null) {
             try {
-                SessionID templateID = lookupTemplateID(sessionID);
+                SessionID templateID = lookupTemplateID(sessionID); // FIX.4.2:EXEC->BANZAI
                 if (templateID == null) {
                     throw new ConfigError("Unable to find a session template for " + sessionID);
                 }
