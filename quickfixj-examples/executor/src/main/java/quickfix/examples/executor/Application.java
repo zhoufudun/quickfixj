@@ -112,6 +112,7 @@ public class Application extends quickfix.MessageCracker implements quickfix.App
     }
 
     public void onLogon(SessionID sessionID) {
+        System.out.println(sessionID);
     }
 
     public void onLogout(SessionID sessionID) {
@@ -125,6 +126,7 @@ public class Application extends quickfix.MessageCracker implements quickfix.App
 
     public void fromAdmin(quickfix.Message message, SessionID sessionID) throws FieldNotFound, IncorrectDataFormat,
             IncorrectTagValue, RejectLogon {
+        System.out.println(sessionID);
     }
 
     public void fromApp(quickfix.Message message, SessionID sessionID) throws FieldNotFound, IncorrectDataFormat,

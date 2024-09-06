@@ -51,7 +51,8 @@ public class DynamicAcceptorSessionProvider implements AcceptorSessionProvider {
     public static final String WILDCARD = "*";
     private static final SessionID ANY_SESSION = new SessionID(WILDCARD, WILDCARD, WILDCARD,
             WILDCARD, WILDCARD, WILDCARD, WILDCARD, null);
-
+    // acceptor的配置：AcceptorTemplate=Y
+    // [<FIX.4.0:*->*,FIX.4.0:*->*>, <FIX.4.2:*->*,FIX.4.2:*->*>, <FIX.4.3:*->*,FIX.4.3:*->*>, <FIX.4.1:*->*,FIX.4.1:*->*>, <FIX.4.4:*->*,FIX.4.4:*->*>]
     private final List<TemplateMapping> templateMappings;
     protected final SessionSettings settings;
     protected final SessionFactory sessionFactory;
@@ -126,11 +127,11 @@ public class DynamicAcceptorSessionProvider implements AcceptorSessionProvider {
         sessionFactory = new DefaultSessionFactory(application, messageStoreFactory, logFactory,
                 messageFactory);
     }
-
+    // FIX.4.2:EXEC->BANZAI（这个是客户端传递的数据中解析出来的）
     public synchronized Session getSession(SessionID sessionID, SessionConnector sessionConnector) {
         Session s = Session.lookupSession(sessionID);
         if (s == null) {
-            try {
+            try { // 找到模版FIX.4.2:*->*
                 SessionID templateID = lookupTemplateID(sessionID); // FIX.4.2:EXEC->BANZAI
                 if (templateID == null) {
                     throw new ConfigError("Unable to find a session template for " + sessionID);
@@ -145,7 +146,7 @@ public class DynamicAcceptorSessionProvider implements AcceptorSessionProvider {
                 dynamicSettings.setString(TARGETCOMPID, sessionID.getTargetCompID());
                 optionallySetValue(dynamicSettings, TARGETSUBID, sessionID.getTargetSubID());
                 optionallySetValue(dynamicSettings, TARGETLOCID, sessionID.getTargetLocationID());
-                s = sessionFactory.create(sessionID, dynamicSettings);
+                s = sessionFactory.create(sessionID, dynamicSettings); // FIX.4.2:EXEC->BANZAI[in:1,out:1]
                 if (sessionConnector != null) {
                     sessionConnector.addDynamicSession(s);
                 }
@@ -160,7 +161,7 @@ public class DynamicAcceptorSessionProvider implements AcceptorSessionProvider {
         dynamicSettings.setString(key, value);
     }
 
-    protected SessionID lookupTemplateID(SessionID sessionID) {
+    protected SessionID lookupTemplateID(SessionID sessionID) { // FIX.4.2:EXEC->BANZAI
         for (TemplateMapping mapping : templateMappings) {
             if (isMatching(mapping.getPattern(), sessionID)) {
                 return mapping.getTemplateID();

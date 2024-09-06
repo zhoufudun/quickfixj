@@ -112,7 +112,7 @@ class AcceptorIoHandler extends AbstractIoHandler {
     }
 
     @Override
-    protected Session findQFSession(IoSession protocolSession, SessionID sessionID) {
+    protected Session findQFSession(IoSession protocolSession, SessionID sessionID) { // sessionID=FIX.4.2:EXEC->BANZAI
         Session s = super.findQFSession(protocolSession, sessionID);
         if (s == null) {
             s = sessionProvider.getSession(sessionID, eventHandlingStrategy.getSessionConnector());
